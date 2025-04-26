@@ -6,7 +6,6 @@
 [license-badge]: https://img.shields.io/badge/license-MIT-blue.svg  
 [spack]: https://spack.io  
 
-
 A GitHub Actions composite action to:
 
 1. Install your project (and dependencies) via [Spack][spack]  
@@ -43,28 +42,24 @@ jobs:
           env-variant: default
           mirror: my-org/my-spack-mirror
           # Optional inputs shown with their defaults:
-          # packages-repo: numpex/spack.numpex
-          # packages-path: spack-packages
-          # spack-version: v2.1.1
+          # repo-packages: numpex/spack.numpex
+          # repo-packages-path: spack.numpex
           # spack-path: _spack
           # base-image: ubuntu:24.04
 ```
-
-> **Note:** Ensure `secrets.GITHUB_TOKEN` has `packages: write` permission.
 
 ---
 
 ## Inputs
 
-| Input           | Description                                                                 | Required | Default               |
-| --------------- | --------------------------------------------------------------------------- | :------: | --------------------- |
-| `env-variant`   | Spack environment variant to install (e.g. `default`, `omp`, etc.)         |   ✅     | —                     |
-| `mirror`        | Name of the OCI mirror (e.g. `my-org/my-spack-mirror`)                     |   ✅     | —                     |
-| `packages-repo` | GitHub repo with your Spack package recipes                                 |          | `numpex/spack.numpex` |
-| `packages-path` | Local directory to clone the Spack packages repo                            |          | `spack-packages`      |
-| `spack-version` | Version of the `spack/setup-spack` action to use                            |          | `v2.1.1`              |
-| `spack-path`    | Local install path for the Spack checkout                                   |          | `_spack`              |
-| `base-image`    | Base Docker image passed to `spack buildcache push --base-image`            |          | `ubuntu:24.04`        |
+| Input              | Description                                                                 | Required | Default               |
+| ------------------ | --------------------------------------------------------------------------- | :------: | --------------------- |
+| `env-variant`      | Spack environment variant to install (e.g. `default`, `omp`, etc.)         |   ✅     | —                     |
+| `mirror`           | Name of the OCI mirror (e.g. `my-org/my-spack-mirror`)                     |   ✅     | —                     |
+| `repo-packages`    | GitHub repo with your Spack package recipes                                 |          | `numpex/spack.numpex` |
+| `repo-packages-path` | Local directory to clone the Spack packages repo                          |          | `spack.numpex`        |
+| `spack-path`       | Local install path for the Spack checkout                                   |          | `_spack`              |
+| `base-image`       | Base Docker image passed to `spack buildcache push --base-image`            |          | `ubuntu:24.04`        |
 
 ---
 
@@ -94,7 +89,49 @@ jobs:
 
 ---
 
+## Test Workflow Example
+
+Here’s a sample workflow you can use within your Spack Build-Cache Action repository to test the action locally:
+
+```yaml
+name: Test Spack Build-Cache Action
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  smoke:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      # 1) Check out this action’s code
+      - name: Checkout action
+        uses: actions/checkout@v4
+
+      # 2) Run our composite action locally
+      - name: Run Spack Build-Cache
+        uses: ./
+        with:
+          env-variant: default
+          repo-packages: numpex/spack.numpex
+          repo-packages-path: spack.numpex
+          mirror: numpex-buildcache
+
+      # 3) Verify installed specs
+      - name: List installed specs
+        run: |
+          . _spack/share/spack/setup-env.sh
+          spack find -lv
+```
+
+---
+
 ## License
 
 [BSD-3 License](LICENSE)
-
