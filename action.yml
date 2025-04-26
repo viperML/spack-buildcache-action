@@ -15,10 +15,11 @@ inputs:
   packages-path:
     description: "Local path to clone that repo"
     required: false
-    default: "spack-packages"
+    default: "spack.numpex"
   mirror:
     description: "Name of the Spack buildcache mirror"
     required: true
+    default: "numpex-buildcache"
   spack-version:
     description: "Version of spack/setup-spack to use"
     required: false

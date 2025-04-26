@@ -1,0 +1,35 @@
+name: Test Spack Build-Cache Action
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  smoke:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      # 1) Check out this action’s code
+      - name: Checkout action
+        uses: actions/checkout@v4
+
+      # 2) Run our composite action locally
+      - name: Run Spack Build-Cache
+        uses: ./
+        with:
+          env-variant: default
+          packages-repo: numpex/spack.numpex
+          packages-path: spack.numpex
+          mirror: numpex-buildcache
+
+      - name: spack 
+        run: |
+          spack find -lv
+          
+          
+          
