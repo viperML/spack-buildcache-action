@@ -5,23 +5,24 @@ branding:
   color: purple
 
 inputs:
-  # which Spack environment to use (directory under your packages-repo)
+  # which Spack environment to use (directory under your repo-packages)
   env-variant:
     description: "Spack environment variant (e.g. 'default')"
     required: true
-
+  # path to spack environments
+  env-path:
+    description: "local path to Spack environments"
+    required: false
+    default: ".spack"
   # where to pull your Spack packages from
-  packages-repo:
+  repo-packages:
     description: "GitHub repo with your Spack package recipes"
     required: false
     default: "numpex/spack.numpex"
-
-  # checkout path for that repo
-  packages-path:
-    description: "Local path to clone the Spack packages repo"
+  repo-packages-path:
+    description: "Path to your Spack packages repo"
     required: false
-    default: "spack-packages"
-
+    default: "spack.numpex"    
   # mirror name in Spack
   mirror:
     description: "Name of the Spack buildcache mirror"
@@ -47,36 +48,37 @@ runs:
         submodules: true
 
     - name: Set up Spack
-      # pinned version, cannot use inputs here
       uses: spack/setup-spack@v2.1.1
       with:
         buildcache: true
-        path: ${{ inputs.packages-path }}/.spack
+        path: _spack
         color: true
 
     - name: Checkout Spack packages repo
       uses: actions/checkout@v4
       with:
-        repository: ${{ inputs.packages-repo }}
-        path: ${{ inputs.packages-path }}
+        repository: ${{ inputs.repo-packages }}
+        path: ${{ inputs.repo-packages-path }}
         fetch-depth: 1
 
     - name: Add custom Spack repo
-      shell: spack-bash {0}
+      shell: bash
       run: |
+        . _spack/share/spack/setup-env.sh
         spack repo add "${{ inputs.packages-path }}"
 
     - name: Install & Push buildcache
-      shell: spack-bash {0}
+      shell: bash
       env:
         SPACK_MIRROR_TOKEN: ${{ inputs.mirror-token }}
       run: |
-        spack -e "${{ inputs.packages-path }}/${{ inputs.env-variant }}" install --no-check-signature
-        spack -e "${{ inputs.packages-path }}/${{ inputs.env-variant }}" mirror set --push \
+        . _spack/share/spack/setup-env.sh
+        spack -e "${{ inputs.env-path }}/${{ inputs.env-variant }}" install --no-check-signature
+        spack -e "${{ inputs.env-path }}/${{ inputs.env-variant }}" mirror set --push \
           --oci-username "${{ github.actor }}" \
           --oci-password "${SPACK_MIRROR_TOKEN}" \
           "${{ inputs.mirror }}"
-        spack -e "${{ inputs.packages-path }}/${{ inputs.env-variant }}" buildcache push \
+        spack -e "${{ inputs.env-path }}/${{ inputs.env-variant }}" buildcache push \
           --base-image "${{ inputs.base-image }}" \
           --unsigned \
           --update-index "${{ inputs.mirror }}"
