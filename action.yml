@@ -30,7 +30,7 @@ inputs:
 
   # pass in your GitHub token or other OCI password
   mirror-token:
-    description: "Password/token to push to the mirror (e.g. ${{ secrets.GITHUB_TOKEN }})"
+    description: "Password/token to push to the mirror (e.g. secrets.GITHUB_TOKEN)"
     required: true
 
   base-image:
