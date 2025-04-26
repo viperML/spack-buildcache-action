@@ -62,12 +62,12 @@ runs:
         fetch-depth: 1
 
     - name: Add custom Spack repo
-      shell: bash
+      shell: spack-bash {0}
       run: |
         spack repo add "${{ inputs.packages-path }}"
 
     - name: Install & Push buildcache
-      shell: bash
+      shell: spack-bash {0}
       env:
         SPACK_MIRROR_TOKEN: ${{ inputs.mirror-token }}
       run: |
