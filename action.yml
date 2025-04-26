@@ -1,0 +1,74 @@
+name: "Spack Build-Cache"
+description: "Install via Spack, push buildcache to a mirror"
+branding:
+  icon: package
+  color: purple
+
+inputs:
+  env-variant:
+    description: "Spack environment variant (e.g. 'default')"
+    required: true
+  packages-repo:
+    description: "GitHub repo with your Spack package recipes"
+    required: false
+    default: "numpex/spack.numpex"
+  packages-path:
+    description: "Local path to clone that repo"
+    required: false
+    default: "spack-packages"
+  mirror:
+    description: "Name of the Spack buildcache mirror"
+    required: true
+  spack-version:
+    description: "Version of spack/setup-spack to use"
+    required: false
+    default: "v2.1.1"
+  spack-path:
+    description: "Local install path for Spack"
+    required: false
+    default: "_spack"
+  base-image:
+    description: "Base image for the buildcache"
+    required: false
+    default: "ubuntu:24.04"
+
+runs:
+  using: composite
+  steps:
+    - name: Checkout source
+      uses: actions/checkout@v4
+      with:
+        submodules: true
+
+    - name: Set up Spack
+      uses: spack/setup-spack@${{ inputs.spack-version }}
+      with:
+        buildcache: true
+        path: ${{ inputs.spack-path }}
+        color: true
+
+    - name: Checkout Repo Spack packages
+      uses: actions/checkout@v4
+      with:
+        repository: ${{ inputs.packages-repo }}
+        path: ${{ inputs.packages-path }}
+        fetch-depth: 1
+
+    - name: Add custom Spack repo
+      run: spack repo add ${{ inputs.packages-path }}
+
+    - name: Install & Push buildcache
+      shell: bash
+      run: |
+        spack -e ${{ inputs.packages-path }}/${{ inputs.env-variant }} \
+          install --no-check-signature
+        spack -e ${{ inputs.packages-path }}/${{ inputs.env-variant }} \
+          mirror set --push \
+            --oci-username ${{ github.actor }} \
+            --oci-password "${{ secrets.GITHUB_TOKEN }}" \
+            ${{ inputs.mirror }}
+        spack -e ${{ inputs.packages-path }}/${{ inputs.env-variant }} \
+          buildcache push \
+            --base-image ${{ inputs.base-image }} \
+            --unsigned \
+            --update-index ${{ inputs.mirror }}
