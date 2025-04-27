@@ -1,9 +1,10 @@
 # Spack Build-Cache Action
 
-![Version][version-badge] ![License][license-badge]
 
-[version-badge]: https://img.shields.io/badge/version-v1.0.0-blue.svg  
-[license-badge]: https://img.shields.io/badge/license-MIT-blue.svg  
+![GitHub Release](https://img.shields.io/github/v/release/numpex/spack-buildcache-action)
+![GitHub License](https://img.shields.io/github/license/numpex/spack-buildcache-action)
+![Static Badge](https://img.shields.io/badge/packaging-spack-blue)
+
 [spack]: https://spack.io  
 
 A GitHub Actions composite action to:
