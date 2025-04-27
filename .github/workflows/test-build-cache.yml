@@ -23,10 +23,12 @@ jobs:
         uses: ./
         with:
           env-variant: default
-          packages-repo: numpex/spack.numpex
-          packages-path: spack.numpex
+          env-path: .spack
+          repo-packages: numpex/spack.numpex
+          repo-packages-path: spack.numpex
           mirror: numpex-buildcache
-
+          mirror-token: ${{ secrets.GITHUB_TOKEN }}
+          base-image: ubuntu:24.04
       - name: spack 
         run: |
           spack find -lv

@@ -65,7 +65,7 @@ runs:
       shell: bash
       run: |
         . _spack/share/spack/setup-env.sh
-        spack repo add "${{ inputs.packages-path }}"
+        spack repo add "${{ inputs.repo-packages-path }}"
 
     - name: Install & Push buildcache
       shell: bash
