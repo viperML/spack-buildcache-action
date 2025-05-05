@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [ main ]
 
+env:
+  spack_env: .spack/default
+
 jobs:
   smoke:
     runs-on: ubuntu-24.04
@@ -14,24 +17,19 @@ jobs:
       packages: write
 
     steps:
-      # 1) Check out this action’s code
-      - name: Checkout action
+      - name: Checkout
         uses: actions/checkout@v4
 
-      # 2) Run our composite action locally
       - name: Run Spack Build-Cache
         uses: ./
         with:
-          env-variant: default
-          env-path: .spack
-          repo-packages: numpex/spack.numpex
-          repo-packages-path: spack.numpex
-          mirror: numpex-buildcache
-          mirror-token: ${{ secrets.GITHUB_TOKEN }}
-          base-image: ubuntu:24.04
-      - name: spack 
+          environment: ${{ env.spack_env }}
+
+      - name: Check specs
         run: |
-          spack find -lv
-          
-          
-          
+          spack -e $spack_env find
+
+      - name: Check programs
+        run: |
+          spack env activate $spack_env
+          which -a cmake
