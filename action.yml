@@ -5,80 +5,79 @@ branding:
   color: purple
 
 inputs:
-  # which Spack environment to use (directory under your repo-packages)
-  env-variant:
-    description: "Spack environment variant (e.g. 'default')"
+  environment:
+    description: "Path to use as the environment"
     required: true
-  # path to spack environments
-  env-path:
-    description: "local path to Spack environments"
-    required: false
-    default: ".spack"
-  # where to pull your Spack packages from
-  repo-packages:
-    description: "GitHub repo with your Spack package recipes"
-    required: false
-    default: "numpex/spack.numpex"
-  repo-packages-path:
-    description: "Path to your Spack packages repo"
-    required: false
-    default: "spack.numpex"    
-  # mirror name in Spack
-  mirror:
-    description: "Name of the Spack buildcache mirror"
-    required: true
-    default: "numpex-buildcache"
+    default: ".spack/default"
 
-  # pass in your GitHub token or other OCI password
-  mirror-token:
-    description: "Password/token to push to the mirror (e.g. secrets.GITHUB_TOKEN)"
-    required: true
-
-  base-image:
-    description: "Base container image for buildcache metadata"
+  load-environment:
+    description: "Whether to automatically load the environment for subsequent steps"
     required: false
-    default: "ubuntu:24.04"
+    default: "true"
+
+  spack-path:
+    description: "Path to install Spack to"
+    required: false
+    default: "spack"
+
+  token:
+    description: "The GitHub token. This will be used to push to the build cache."
+    required: false
+    default: "${{ github.token }}"
 
 runs:
   using: composite
   steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      with:
-        submodules: true
-
-    - name: Set up Spack
-      uses: spack/setup-spack@v2.1.1
-      with:
-        buildcache: true
-        path: _spack
-        color: true
-
-    - name: Checkout Spack packages repo
-      uses: actions/checkout@v4
-      with:
-        repository: ${{ inputs.repo-packages }}
-        path: ${{ inputs.repo-packages-path }}
-        fetch-depth: 1
-
-    - name: Add custom Spack repo
+    - name: Configure Spack
       shell: bash
       run: |
-        . _spack/share/spack/setup-env.sh
-        spack repo add "${{ inputs.repo-packages-path }}"
+        . "${{ inputs.spack-path }}/share/spack/setup-env.sh"
+        spack bootstrap now
 
-    - name: Install & Push buildcache
-      shell: bash
-      env:
-        SPACK_MIRROR_TOKEN: ${{ inputs.mirror-token }}
-      run: |
-        . _spack/share/spack/setup-env.sh
-        spack -e "${{ inputs.env-path }}/${{ inputs.env-variant }}" install --no-check-signature
-        spack -e "${{ inputs.env-path }}/${{ inputs.env-variant }}" mirror set --push \
-          --oci-username "${{ github.actor }}" \
-          --oci-password "${SPACK_MIRROR_TOKEN}" \
-          "${{ inputs.mirror }}"
-        spack -e "${{ inputs.env-path }}/${{ inputs.env-variant }}" buildcache push \
-          --base-image "${{ inputs.base-image }}" \
+        spack \
+          mirror add \
+          --scope site \
           --unsigned \
-          --update-index "${{ inputs.mirror }}"
+          --oci-username ${{ github.repository_owner }} \
+          --oci-password ${{ inputs.token }} \
+          buildcache-numpex \
+          oci://ghcr.io/${{ github.repository }}
+
+        spack compiler find --scope site
+
+        # Sane defaults
+        spack config --scope site add config:install_tree:root:/opt/root
+        spack config --scope site add config:install_tree:padded_length:128
+
+    - name: Install Spack environment
+      shell: bash
+      run: |
+        . "${{ inputs.spack-path }}/share/spack/setup-env.sh"
+        spack -e "${{ inputs.environment }}" install
+
+    - name: Automatically load environment
+      if: ${{ inputs.load-environment == 'true' }}
+      shell: bash
+      run: |
+        . "${{ inputs.spack-path }}/share/spack/setup-env.sh"
+        env_file="/tmp/spack-env"
+        spack env activate "${{ inputs.environment }}" --sh > "$env_file"
+        while IFS= read -r line; do
+          if [[ "$line" =~ ^export\ (.*)=(.*)\;$ ]]; then
+            exporting="${BASH_REMATCH[1]}=${BASH_REMATCH[2]}"
+            echo ":: exporting $exporting"
+            echo "$exporting" >> "$GITHUB_ENV"
+          fi
+        done < "$env_file"
+        rm -f "$env_file"
+
+    - name: Push to cache
+      uses: gacts/run-and-post-run@v1
+      with:
+        post: |
+          . "${{ inputs.spack-path }}/share/spack/setup-env.sh"
+          spack -e "${{ inputs.environment }}" buildcache \
+            push \
+            --update-index \
+            --with-build-dependencies \
+            buildcache-numpex
