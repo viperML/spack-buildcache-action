@@ -63,6 +63,19 @@ runs:
         . "${{ inputs.spack-path }}/share/spack/setup-env.sh"
         spack -e "${{ inputs.environment }}" install
 
+    - name: Activate Spack environment
+      shell: bash
+      run: |
+        . "${{ inputs.spack-path }}/share/spack/setup-env.sh"
+        spack env activate "${{ inputs.environment }}" --sh > /tmp/spack-env
+        while IFS= read -r line; do
+          if [[ "$line" =~ ^export\ (.*)=(.*)\;$ ]]; then
+            exporting="${BASH_REMATCH[1]}=${BASH_REMATCH[2]}"
+            echo ":: exporting $exporting"
+            echo "$exporting" >> "$GITHUB_ENV"
+          fi
+        done < /tmp/spack-env
+
     - name: Push to cache
       uses: gacts/run-and-post-run@v1
       with:
