@@ -15,7 +15,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Run Spack Build-Cache
+      - name: Set up Spack
+        uses: spack/setup-spack@v2
+
+      - name: Add spack.numpex
+        uses: viperML/spack-repo-action@master
+        with:
+          repository: numpex/spack.numpex
+
+      - name: Activate Spack build cache
         uses: ./
         with:
           environment: .spack/default

@@ -8,32 +8,26 @@ inputs:
   environment:
     description: "Path to use as the environment"
     required: true
-    default: .spack/default
+    default: ".spack/default"
+
+  load-environment:
+    description: "Whether to automatically load the environment for subsequent steps"
+    required: false
+    default: "true"
 
   spack-path:
     description: "Path to install Spack to"
     required: false
-    default: spack
+    default: "spack"
 
   token:
     description: "The GitHub token. This will be used to push to the build cache."
     required: false
-    default: ${{ github.token }}
-
-  spack-ref:
-    description: "Version of Spack (git ref: develop, releases/v0.23, ...)"
-    required: false
-    default: develop
+    default: "${{ github.token }}"
 
 runs:
   using: composite
   steps:
-    - name: Set up Spack
-      uses: spack/setup-spack@v2.1.1
-      with:
-        path: ${{ inputs.spack-path }}
-        ref: ${{ inputs.spack-ref }}
-
     - name: Configure Spack
       shell: bash
       run: |
@@ -55,26 +49,27 @@ runs:
         spack config --scope site add config:install_tree:root:/opt/root
         spack config --scope site add config:install_tree:padded_length:128
 
-        spack config blame
-
     - name: Install Spack environment
       shell: bash
       run: |
         . "${{ inputs.spack-path }}/share/spack/setup-env.sh"
         spack -e "${{ inputs.environment }}" install
 
-    - name: Activate Spack environment
+    - name: Automatically load environment
+      if: ${{ inputs.load-environment == 'true' }}
       shell: bash
       run: |
         . "${{ inputs.spack-path }}/share/spack/setup-env.sh"
-        spack env activate "${{ inputs.environment }}" --sh > /tmp/spack-env
+        env_file="/tmp/spack-env"
+        spack env activate "${{ inputs.environment }}" --sh > "$env_file"
         while IFS= read -r line; do
           if [[ "$line" =~ ^export\ (.*)=(.*)\;$ ]]; then
             exporting="${BASH_REMATCH[1]}=${BASH_REMATCH[2]}"
             echo ":: exporting $exporting"
             echo "$exporting" >> "$GITHUB_ENV"
           fi
-        done < /tmp/spack-env
+        done < "$env_file"
+        rm -f "$env_file"
 
     - name: Push to cache
       uses: gacts/run-and-post-run@v1
