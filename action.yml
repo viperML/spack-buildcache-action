@@ -49,6 +49,19 @@ runs:
         spack config --scope site add config:install_tree:root:/opt/root
         spack config --scope site add config:install_tree:padded_length:128
 
+    # Schedule for pushing before installing
+    # If installing fails, push will still be performed
+    - name: Push to cache
+      uses: gacts/run-and-post-run@v1
+      with:
+        post: |
+          . "${{ inputs.spack-path }}/share/spack/setup-env.sh"
+          spack -e "${{ inputs.environment }}" buildcache \
+            push \
+            --update-index \
+            --with-build-dependencies \
+            buildcache-numpex
+
     - name: Install Spack environment
       shell: bash
       run: |
@@ -70,14 +83,3 @@ runs:
           fi
         done < "$env_file"
         rm -f "$env_file"
-
-    - name: Push to cache
-      uses: gacts/run-and-post-run@v1
-      with:
-        post: |
-          . "${{ inputs.spack-path }}/share/spack/setup-env.sh"
-          spack -e "${{ inputs.environment }}" buildcache \
-            push \
-            --update-index \
-            --with-build-dependencies \
-            buildcache-numpex
