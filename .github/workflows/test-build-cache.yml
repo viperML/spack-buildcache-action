@@ -2,9 +2,7 @@ name: Test Spack Build-Cache Action
 
 on:
   push:
-    branches: [ main ]
   pull_request:
-    branches: [ main ]
 
 jobs:
   smoke:
@@ -14,24 +12,28 @@ jobs:
       packages: write
 
     steps:
-      # 1) Check out this action’s code
-      - name: Checkout action
+      - name: Checkout
         uses: actions/checkout@v4
 
-      # 2) Run our composite action locally
-      - name: Run Spack Build-Cache
+      - name: Set up Spack
+        uses: spack/setup-spack@v2
+
+      # - name: Add spack.numpex
+      #   uses: viperML/spack-repo-action@master
+      #   with:
+      #     repository: numpex/spack.numpex
+
+      - name: Activate Spack build cache
         uses: ./
         with:
-          env-variant: default
-          env-path: .spack
-          repo-packages: numpex/spack.numpex
-          repo-packages-path: spack.numpex
-          mirror: numpex-buildcache
-          mirror-token: ${{ secrets.GITHUB_TOKEN }}
+          environment: .spack/default
           base-image: ubuntu:24.04
-      - name: spack 
+          force: true
+
+      - name: Check specs
         run: |
-          spack find -lv
-          
-          
-          
+          spack spec
+
+      - name: Check programs
+        run: |
+          which -a cmake

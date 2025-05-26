@@ -5,29 +5,14 @@
 ![GitHub License](https://img.shields.io/github/license/numpex/spack-buildcache-action)
 ![Static Badge](https://img.shields.io/badge/packaging-spack-blue)
 
-[spack]: https://spack.io  
+[spack]: https://spack.io
 
-A GitHub Actions composite action to:
+A GitHub Actions composite action to build and push a Spack environment into an OCI registry mirror.
 
-1. Install your project (and dependencies) via [Spack][spack]  
-2. Push the resulting binary buildcache to a remote OCI registry mirror
-
----
-
-## Features
-
-- Checks out your repository (including submodules)  
-- Sets up Spack via `spack/setup-spack`  
-- Clones your custom Spack package recipes repo  
-- Adds it as a Spack repository  
-- Installs the specified Spack environment variant  
-- Pushes the buildcache to a specified OCI mirror  
-
----
 
 ## Usage
 
-Add this step to your workflow:
+Add the step after your `spack/setup-spack` action:
 
 ```yaml
 jobs:
@@ -37,101 +22,35 @@ jobs:
       packages: write
 
     steps:
-      - name: Build & Push Spack Buildcache
-        uses: numpex/spack-buildcache-action@v1
+      - name: Set up Spack
+        uses: spack/setup-spack@v2
+
+      - name: Build and push Spack environment
+        uses: numpex/spack-buildcache-action@v2
         with:
-          env-variant: default
-          mirror: my-org/my-spack-mirror
-          # Optional inputs shown with their defaults:
-          # repo-packages: numpex/spack.numpex
-          # repo-packages-path: spack.numpex
-          # spack-path: _spack
-          # base-image: ubuntu:24.04
+          environment: .spack/default
+
+      - name: Build app
+        # Use your Spack packages automatically
+        run: |
+          cmake -B build
+          cmake --build build
 ```
 
----
 
 ## Inputs
 
-| Input              | Description                                                                 | Required | Default               |
-| ------------------ | --------------------------------------------------------------------------- | :------: | --------------------- |
-| `env-variant`      | Spack environment variant to install (e.g. `default`, `omp`, etc.)         |   ✅     | —                     |
-| `mirror`           | Name of the OCI mirror (e.g. `my-org/my-spack-mirror`)                     |   ✅     | —                     |
-| `repo-packages`    | GitHub repo with your Spack package recipes                                 |          | `numpex/spack.numpex` |
-| `repo-packages-path` | Local directory to clone the Spack packages repo                          |          | `spack.numpex`        |
-| `spack-path`       | Local install path for the Spack checkout                                   |          | `_spack`              |
-| `base-image`       | Base Docker image passed to `spack buildcache push --base-image`            |          | `ubuntu:24.04`        |
+| Input              | Description                                                                     | Required | Default                                  |
+| ------------------ | ------------------------------------------------------------------------------- | :------: | ---------------------------------------- |
+| `environment`      | Relative path to the Spack environment (e.g. `.`).                              |    ✅     |                                          |
+| `load-environment` | Whether the Spack environment should be loaded to subsequent steps.             |          | `true`                                   |
+| `spack-path`       | Path to the Spack installation, if changed the path for the setup-spack action. |          | `spack`                                  |
+| `mirror`           | OCI registry to push the packages to.                                           |          | `oci://ghcr.io/${{ github.repository }}` |
+| `token`            | OCI token to use for pushing the packages.                                      |          | `${{ github.token }}`                    |
+| `base-image`       | Image name to attach to the packages, to use them as standalone containers.     |          |                                          |
+| `force`            | Force push packages into the registry.                                          |          | `false`                                  |
 
----
 
-## Example Workflow
-
-```yaml
-name: CI
-
-on:
-  push:
-    tags:
-      - 'v*'
-
-jobs:
-  build-cache:
-    runs-on: ubuntu-24.04
-    permissions:
-      packages: write
-
-    steps:
-      - name: Build & publish Spack cache
-        uses: numpex/spack-buildcache-action@v1
-        with:
-          env-variant: default
-          mirror: numpex/spack-buildcache
-```
-
----
-
-## Test Workflow Example
-
-Here’s a sample workflow you can use within your Spack Build-Cache Action repository to test the action locally:
-
-```yaml
-name: Test Spack Build-Cache Action
-
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-
-jobs:
-  smoke:
-    runs-on: ubuntu-24.04
-    permissions:
-      contents: read
-      packages: write
-
-    steps:
-      # 1) Check out this action’s code
-      - name: Checkout action
-        uses: actions/checkout@v4
-
-      # 2) Run our composite action locally
-      - name: Run Spack Build-Cache
-        uses: ./
-        with:
-          env-variant: default
-          repo-packages: numpex/spack.numpex
-          repo-packages-path: spack.numpex
-          mirror: numpex-buildcache
-
-      # 3) Verify installed specs
-      - name: List installed specs
-        run: |
-          . _spack/share/spack/setup-env.sh
-          spack find -lv
-```
-
----
 
 ## License
 
