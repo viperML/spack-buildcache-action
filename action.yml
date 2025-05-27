@@ -15,11 +15,6 @@ inputs:
     required: false
     default: "true"
 
-  spack-path:
-    description: "Path to the Spack installation, if changed the path for the setup-spack action."
-    required: false
-    default: "spack"
-
   token:
     description: "OCI token to use for pushing the packages."
     required: false
@@ -43,9 +38,8 @@ runs:
   using: composite
   steps:
     - name: Configure Spack
-      shell: bash
+      shell: spack-bash {0}
       run: |
-        . "${{ inputs.spack-path }}/share/spack/setup-env.sh"
         spack bootstrap now
 
         spack \
@@ -71,26 +65,25 @@ runs:
         # gacts/run-and-post-run calls each line as a separate command, so put everything in a single line
         # https://github.com/gacts/run-and-post-run/issues/45
         post: |
-          . "${{ inputs.spack-path }}/share/spack/setup-env.sh" && \
+          spack-bash -c "\
           spack -e "${{ inputs.environment }}" buildcache \
             push \
             --update-index \
             --with-build-dependencies \
             $([[ -n "${{ inputs.base-image }}" ]] && echo --base-image "${{ inputs.base-image }}") \
             $([[ "${{ inputs.force }}" == "true" ]] && echo --force) \
-            buildcache-numpex
+            buildcache-numpex \
+          "
 
     - name: Install Spack environment
-      shell: bash
+      shell: spack-bash {0}
       run: |
-        . "${{ inputs.spack-path }}/share/spack/setup-env.sh"
         spack -e "${{ inputs.environment }}" install
 
     - name: Automatically load environment
       if: ${{ inputs.load-environment == 'true' }}
-      shell: bash
+      shell: spack-bash {0}
       run: |
-        . "${{ inputs.spack-path }}/share/spack/setup-env.sh"
         env_file="/tmp/spack-env"
         spack env activate "${{ inputs.environment }}" --sh > "$env_file"
         while IFS= read -r line; do

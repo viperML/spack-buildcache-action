@@ -44,7 +44,6 @@ jobs:
 | ------------------ | ------------------------------------------------------------------------------- | :------: | ---------------------------------------- |
 | `environment`      | Relative path to the Spack environment (e.g. `.`).                              |    ✅     |                                          |
 | `load-environment` | Whether the Spack environment should be loaded to subsequent steps.             |          | `true`                                   |
-| `spack-path`       | Path to the Spack installation, if changed the path for the setup-spack action. |          | `spack`                                  |
 | `mirror`           | OCI registry to push the packages to.                                           |          | `oci://ghcr.io/${{ github.repository }}` |
 | `token`            | OCI token to use for pushing the packages.                                      |          | `${{ github.token }}`                    |
 | `base-image`       | Image name to attach to the packages, to use them as standalone containers.     |          |                                          |
