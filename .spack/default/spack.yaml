@@ -12,6 +12,7 @@ spack:
   specs:
   - $compilers
   - cmake
+  - python
   view: true
   concretizer:
     unify: true

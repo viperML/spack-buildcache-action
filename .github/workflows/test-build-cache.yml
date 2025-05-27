@@ -28,7 +28,6 @@ jobs:
         with:
           environment: .spack/default
           base-image: ubuntu:24.04
-          force: true
 
       - name: Check specs
         run: |

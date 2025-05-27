@@ -34,6 +34,11 @@ inputs:
     required: false
     default: "false"
 
+  log-name:
+    description: "If not empty, upload the build logs with the following name"
+    required: false
+    default: ""
+
 runs:
   using: composite
   steps:
@@ -57,28 +62,23 @@ runs:
         spack config --scope site add config:install_tree:root:/opt/root
         spack config --scope site add config:install_tree:padded_length:128
 
-    # Schedule for pushing before installing
-    # If installing fails, push will still be performed
-    - name: Push to cache
-      uses: gacts/run-and-post-run@v1
-      with:
-        # gacts/run-and-post-run calls each line as a separate command, so put everything in a single line
-        # https://github.com/gacts/run-and-post-run/issues/45
-        post: |
-          spack-bash -c "\
-          spack -e "${{ inputs.environment }}" buildcache \
-            push \
-            --update-index \
-            --with-build-dependencies \
-            $([[ -n "${{ inputs.base-image }}" ]] && echo --base-image "${{ inputs.base-image }}") \
-            $([[ "${{ inputs.force }}" == "true" ]] && echo --force) \
-            buildcache-numpex \
-          "
-
     - name: Install Spack environment
       shell: spack-bash {0}
       run: |
-        spack -e "${{ inputs.environment }}" install
+        spack \
+          -e "${{ inputs.environment }}" \
+          install \
+          -vv \
+          --log-format junit \
+          --log-file /tmp/spack-log
+
+    - uses: actions/upload-artifact@v4
+      name: Upload logs
+      if: ${{ inputs.log-name != '' }}
+      with:
+        name: ${{ inputs.log-name }}
+        path: /tmp/spack-log.xml
+        overwrite: true
 
     - name: Automatically load environment
       if: ${{ inputs.load-environment == 'true' }}
@@ -94,3 +94,15 @@ runs:
           fi
         done < "$env_file"
         rm -f "$env_file"
+
+    - name: Push to cache
+      shell: spack-bash {0}
+      run: |
+        spack -e "${{ inputs.environment }}" buildcache \
+          push \
+          --update-index \
+          --with-build-dependencies \
+          $([[ -n "${{ inputs.base-image }}" ]] && echo --base-image "${{ inputs.base-image }}") \
+          $([[ "${{ inputs.force }}" == "true" ]] && echo --force) \
+          buildcache-numpex
+
