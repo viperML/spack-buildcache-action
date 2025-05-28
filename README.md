@@ -40,14 +40,16 @@ jobs:
 
 ## Inputs
 
-| Input              | Description                                                                     | Required | Default                                  |
-| ------------------ | ------------------------------------------------------------------------------- | :------: | ---------------------------------------- |
-| `environment`      | Relative path to the Spack environment (e.g. `.`).                              |    ✅     |                                          |
-| `load-environment` | Whether the Spack environment should be loaded to subsequent steps.             |          | `true`                                   |
-| `mirror`           | OCI registry to push the packages to.                                           |          | `oci://ghcr.io/${{ github.repository }}` |
-| `token`            | OCI token to use for pushing the packages.                                      |          | `${{ github.token }}`                    |
-| `base-image`       | Image name to attach to the packages, to use them as standalone containers.     |          |                                          |
-| `force`            | Force push packages into the registry.                                          |          | `false`                                  |
+| Input              | Description                                                                 | Required | Default                                  |
+| ------------------ | --------------------------------------------------------------------------- | :------: | ---------------------------------------- |
+| `environment`      | Relative path to the Spack environment (e.g. `.`).                          |    ✅     |                                          |
+| `load-environment` | Whether the Spack environment should be loaded to subsequent steps.         |          | `true`                                   |
+| `mirror`           | OCI registry to push the packages to.                                       |          | `oci://ghcr.io/${{ github.repository }}` |
+| `token`            | OCI token to use for pushing the packages.                                  |          | `${{ github.token }}`                    |
+| `base-image`       | Image name to attach to the packages, to use them as standalone containers. |          |                                          |
+| `force`            | Force push packages into the registry.                                      |          | `false`                                  |
+| `print-logs`       | Whether to show the build logs for `spack install`.                           |          | `false`                                  |
+| `log-name`         | If not empty, upload the build logs with the following name.                |          |                                          |
 
 
 

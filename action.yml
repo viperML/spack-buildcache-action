@@ -35,9 +35,14 @@ inputs:
     default: "false"
 
   log-name:
-    description: "If not empty, upload the build logs with the following name"
+    description: "If not empty, upload the build logs with the following name."
     required: false
     default: ""
+
+  print-logs:
+    description: "Whether to show the build logs for spack install."
+    required: false
+    default: "false"
 
 runs:
   using: composite
@@ -68,7 +73,7 @@ runs:
         spack \
           -e "${{ inputs.environment }}" \
           install \
-          -vv \
+          $([[ "${{ inputs.print-logs }}" == "true" ]] && echo -vv) \
           --log-format junit \
           --log-file /tmp/spack-log
 
