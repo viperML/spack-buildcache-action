@@ -70,12 +70,17 @@ runs:
     - name: Install Spack environment
       shell: spack-bash {0}
       run: |
+        set +e
         spack \
           -e "${{ inputs.environment }}" \
           install \
           $([[ "${{ inputs.print-logs }}" == "true" ]] && echo -vv) \
           --log-format junit \
           --log-file /tmp/spack-log
+
+        SPACK_INSTALL_EXIT_CODE=$?
+        echo "SPACK_INSTALL_EXIT_CODE=$SPACK_INSTALL_EXIT_CODE" >> "$GITHUB_ENV"
+        set -e
 
     - uses: actions/upload-artifact@v4
       name: Upload logs
@@ -84,6 +89,27 @@ runs:
         name: ${{ inputs.log-name }}
         path: /tmp/spack-log.xml
         overwrite: true
+
+    - name: Push to cache
+      shell: spack-bash {0}
+      run: |
+        spack -e "${{ inputs.environment }}" buildcache \
+          push \
+          --update-index \
+          --with-build-dependencies \
+          $([[ -n "${{ inputs.base-image }}" ]] && echo --base-image "${{ inputs.base-image }}") \
+          $([[ "${{ inputs.force }}" == "true" ]] && echo --force) \
+          buildcache-numpex
+
+    - name: Check Spack install result
+      shell: spack-bash {0}
+      run: |
+        if [[ "$SPACK_INSTALL_EXIT_CODE" -ne 0 ]]; then
+          echo "Spack install failed with exit code: $SPACK_INSTALL_EXIT_CODE"
+          exit $SPACK_INSTALL_EXIT_CODE
+        else
+          echo "Spack install completed successfully"
+        fi
 
     - name: Automatically load environment
       if: ${{ inputs.load-environment == 'true' }}
@@ -100,14 +126,4 @@ runs:
         done < "$env_file"
         rm -f "$env_file"
 
-    - name: Push to cache
-      shell: spack-bash {0}
-      run: |
-        spack -e "${{ inputs.environment }}" buildcache \
-          push \
-          --update-index \
-          --with-build-dependencies \
-          $([[ -n "${{ inputs.base-image }}" ]] && echo --base-image "${{ inputs.base-image }}") \
-          $([[ "${{ inputs.force }}" == "true" ]] && echo --force) \
-          buildcache-numpex
 
