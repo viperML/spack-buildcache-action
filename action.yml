@@ -75,6 +75,7 @@ runs:
           -e "${{ inputs.environment }}" \
           install \
           $([[ "${{ inputs.print-logs }}" == "true" ]] && echo -vv) \
+          --jobs 1 \
           --log-format junit \
           --log-file /tmp/spack-log
 
